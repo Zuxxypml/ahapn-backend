@@ -18,7 +18,10 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
-app.use(cors({ origin: "http://localhost:5173" })); // Update to your frontend domain
+// Allow requests from only production frontend
+app.use(cors({
+  origin: 'http://167.86.103.245',
+}));
 app.use("/uploads", express.static("uploads")); // Serve uploaded files
 
 // MongoDB Connection
