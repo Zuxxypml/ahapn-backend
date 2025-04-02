@@ -18,7 +18,7 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
-app.use(cors({ origin: "https://ahapnng.org" })); // Update to your domain
+app.use(cors({ origin: "https://ahapnng.org" }));
 app.use("/uploads", express.static("uploads"));
 
 // MongoDB Connection
@@ -35,17 +35,58 @@ const waitlistSchema = new mongoose.Schema({
   state: { type: String, required: true },
   regId: { type: String, required: true },
   imageUrl: { type: String },
-  regNumber: { type: Number, required: true },
+  regNumber: { type: String, required: true }, // e.g., "001"
   eventId: { type: String, required: true, unique: true },
   timestamp: { type: Date, default: Date.now },
 });
 const Waitlist = mongoose.model("Waitlist", waitlistSchema);
 
-// Hardcoded list of valid regIds
-const validRegIds = ["REG001", "REG002", "REG003", "REG004", "REG005"];
+// Registration ID Schema (for persisting validRegIds)
+const regIdSchema = new mongoose.Schema({
+  regId: { type: String, required: true, unique: true },
+});
+const RegId = mongoose.model("RegId", regIdSchema);
 
-// Track registration number
-let regNumberCounter = 0;
+// Initial hardcoded 20 random 6-digit registration numbers
+const initialRegIds = [
+  "REG174920",
+  "REG305187",
+  "REG428693",
+  "REG592104",
+  "REG687251",
+  "REG713409",
+  "REG829346",
+  "REG947102",
+  "REG106583",
+  "REG238491",
+  "REG349872",
+  "REG451926",
+  "REG567389",
+  "REG672194",
+  "REG789305",
+  "REG813506",
+  "REG927483",
+  "REG034197",
+  "REG159382",
+  "REG246801",
+];
+
+// Initialize validRegIds in MongoDB (run once or on first start)
+async function initializeRegIds() {
+  const count = await RegId.countDocuments();
+  if (count === 0) {
+    console.log("Initializing registration IDs...");
+    const regIdDocs = initialRegIds.map((regId) => ({ regId }));
+    await RegId.insertMany(regIdDocs);
+    console.log("Initialized 20 registration IDs.");
+  }
+}
+
+// Load validRegIds from MongoDB
+async function loadValidRegIds() {
+  const regIds = await RegId.find().select("regId -_id");
+  return regIds.map((doc) => doc.regId);
+}
 
 // Generate a unique 6-digit event ID
 async function generateEventId() {
@@ -59,6 +100,14 @@ async function generateEventId() {
     if (!existing) isUnique = true;
   }
   return id;
+}
+
+// Get next sequential regNumber (e.g., "001", "002")
+async function getNextRegNumber() {
+  const lastEntry = await Waitlist.findOne().sort({ timestamp: -1 });
+  const lastNumber = lastEntry ? parseInt(lastEntry.regNumber, 10) : 0;
+  const nextNumber = lastNumber + 1;
+  return nextNumber.toString().padStart(3, "0");
 }
 
 // Generate PDF as a buffer
@@ -133,20 +182,27 @@ function generatePDFBuffer(user) {
   });
 }
 
+// Initialize regIds on startup
+initializeRegIds().catch(console.error);
+
 // API: Add to waitlist
 app.post("/api/waitlist", upload.single("image"), async (req, res) => {
   const { name, email, phoneNumber, state, regId } = req.body;
   const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
   try {
-    // Validate regId
+    // Load current validRegIds from MongoDB
+    const validRegIds = await loadValidRegIds();
+
+    // Validate regId and expire it upon use
     if (!validRegIds.includes(regId)) {
-      return res.status(400).json({ message: "Invalid registration ID" });
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired registration ID" });
     }
 
     const eventId = await generateEventId();
-    regNumberCounter += 1;
-    const regNumber = regNumberCounter;
+    const regNumber = await getNextRegNumber();
 
     const newEntry = {
       name,
@@ -160,7 +216,11 @@ app.post("/api/waitlist", upload.single("image"), async (req, res) => {
     };
 
     // Insert into MongoDB
-    const result = await Waitlist.create(newEntry);
+    await Waitlist.create(newEntry);
+
+    // Remove used regId from MongoDB
+    await RegId.deleteOne({ regId });
+    console.log("Remaining valid regIds:", (await loadValidRegIds()).length);
 
     // Generate PDF buffer
     const pdfBuffer = await generatePDFBuffer(newEntry);
@@ -293,11 +353,6 @@ app.get("/api/event-id-pdf/:eventId", async (req, res) => {
       .status(400)
       .json({ message: "Error generating PDF", error: error.message });
   }
-});
-
-// Future: Certificate endpoint
-app.get("/api/certificate/:eventId", async (req, res) => {
-  return res.json({ message: "Certificate generation coming soon!" });
 });
 
 app.listen(process.env.PORT || 5000, () => console.log("Server on port 5000"));
