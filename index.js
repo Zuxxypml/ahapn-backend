@@ -18,10 +18,7 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
-// Allow requests from only production frontend
-app.use(cors({
-  origin: 'http://167.86.103.245',
-}));
+app.use(cors({ origin: 'https://ahapnng.org' }));
 app.use("/uploads", express.static("uploads")); // Serve uploaded files
 
 // MongoDB Connection
