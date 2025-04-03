@@ -12,7 +12,10 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/"),
   filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
 });
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit
+});
 
 dotenv.config();
 
@@ -187,14 +190,13 @@ initializeRegIds().catch(console.error);
 
 // API: Add to waitlist
 app.post("/api/waitlist", upload.single("image"), async (req, res) => {
-  const { name, email, phoneNumber, state, regId } = req.body;
-  const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
-
   try {
+    const { name, email, phoneNumber, state, regId } = req.body;
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+
     // Load current validRegIds from MongoDB
     const validRegIds = await loadValidRegIds();
 
-    // Validate regId and expire it upon use
     if (!validRegIds.includes(regId)) {
       return res
         .status(400)
@@ -215,17 +217,11 @@ app.post("/api/waitlist", upload.single("image"), async (req, res) => {
       eventId,
     };
 
-    // Insert into MongoDB
     await Waitlist.create(newEntry);
-
-    // Remove used regId from MongoDB
     await RegId.deleteOne({ regId });
     console.log("Remaining valid regIds:", (await loadValidRegIds()).length);
 
-    // Generate PDF buffer
     const pdfBuffer = await generatePDFBuffer(newEntry);
-
-    // Send email
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -252,6 +248,11 @@ app.post("/api/waitlist", upload.single("image"), async (req, res) => {
       .status(201)
       .json({ message: "Added to waitlist with ID sent via email!", eventId });
   } catch (error) {
+    if (error.code === "LIMIT_FILE_SIZE") {
+      return res
+        .status(400)
+        .json({ message: "Image file too large. Maximum size is 5 MB." });
+    }
     if (error.code === 11000) {
       return res
         .status(400)
