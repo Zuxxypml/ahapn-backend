@@ -26,7 +26,7 @@ app.use("/uploads", express.static("uploads"));
 
 // MongoDB Connection
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI || "mongodb://localhost:27017/ahapnDatabase")
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.log("MongoDB connection error:", err));
 
@@ -38,8 +38,7 @@ const waitlistSchema = new mongoose.Schema({
   state: { type: String, required: true },
   regId: { type: String, required: true },
   imageUrl: { type: String },
-  regNumber: { type: String, required: true }, // e.g., "001"
-  eventId: { type: String, required: true, unique: true },
+  eventId: { type: String, required: true, unique: true }, // e.g., "edoahapn-001"
   timestamp: { type: Date, default: Date.now },
 });
 const Waitlist = mongoose.model("Waitlist", waitlistSchema);
@@ -91,26 +90,16 @@ async function loadValidRegIds() {
   return regIds.map((doc) => doc.regId);
 }
 
-// Generate a unique 6-digit event ID
+// Generate sequential eventId (e.g., "edoahapn-001")
 async function generateEventId() {
   const prefix = "edoahapn-";
-  let id;
-  let isUnique = false;
-  while (!isUnique) {
-    const randomNum = Math.floor(100 + Math.random() * 900).toString();
-    id = prefix + randomNum.padStart(3, "0");
-    const existing = await Waitlist.findOne({ eventId: id });
-    if (!existing) isUnique = true;
-  }
-  return id;
-}
-
-// Get next sequential regNumber (e.g., "001", "002")
-async function getNextRegNumber() {
   const lastEntry = await Waitlist.findOne().sort({ timestamp: -1 });
-  const lastNumber = lastEntry ? parseInt(lastEntry.regNumber, 10) : 0;
+  const lastNumber =
+    lastEntry && lastEntry.eventId.startsWith(prefix)
+      ? parseInt(lastEntry.eventId.split("-")[1], 10)
+      : 0;
   const nextNumber = lastNumber + 1;
-  return nextNumber.toString().padStart(3, "0");
+  return `${prefix}${nextNumber.toString().padStart(3, "0")}`;
 }
 
 // Generate PDF as a buffer
@@ -140,15 +129,12 @@ function generatePDFBuffer(user) {
       .fontSize(12)
       .text("Edo 2025 Conference ID", { align: "center", color: "#006400" });
     doc.rect(25, 50, 260, 310).stroke("#006400");
-    doc
-      .fontSize(10)
-      .text(`ID: ${user.regNumber}`, 30, 120, { color: "#006400" });
+    doc.fontSize(10).text(`ID: ${user.eventId}`, 30, 120, { color: "#006400" });
     doc.text(`Name: ${user.name.toUpperCase()}`, 30, 140, { color: "#006400" });
     doc.text(`State/Country: ${user.state.toUpperCase()}`, 30, 160, {
       color: "#006400",
     });
-    doc.text(`Reg Number: ${user.regNumber}`, 30, 180, { color: "#006400" });
-    doc.text(`Valid for: Edo 2025 (August 4–9, 2025)`, 30, 200, {
+    doc.text(`Valid for: Edo 2025 (August 4–9, 2025)`, 30, 180, {
       color: "#006400",
     });
 
@@ -163,7 +149,7 @@ function generatePDFBuffer(user) {
       (err, barcodeBuffer) => {
         if (err) reject(err);
         else {
-          doc.image(barcodeBuffer, 30, 250, { width: 120 });
+          doc.image(barcodeBuffer, 30, 230, { width: 120 }); // Adjusted position
           doc
             .moveDown(11)
             .fontSize(6)
@@ -194,9 +180,7 @@ app.post("/api/waitlist", upload.single("image"), async (req, res) => {
     const { name, email, phoneNumber, state, regId } = req.body;
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
-    // Load current validRegIds from MongoDB
     const validRegIds = await loadValidRegIds();
-
     if (!validRegIds.includes(regId)) {
       return res
         .status(400)
@@ -204,7 +188,6 @@ app.post("/api/waitlist", upload.single("image"), async (req, res) => {
     }
 
     const eventId = await generateEventId();
-    const regNumber = await getNextRegNumber();
 
     const newEntry = {
       name,
@@ -213,7 +196,6 @@ app.post("/api/waitlist", upload.single("image"), async (req, res) => {
       state,
       regId,
       imageUrl,
-      regNumber,
       eventId,
     };
 
@@ -234,7 +216,7 @@ app.post("/api/waitlist", upload.single("image"), async (req, res) => {
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Welcome to Edo 2025 Waitlist",
-      text: `Dear ${name},\n\nYou have been added to the Edo 2025 waitlist!\nEvent ID: ${eventId}\nReg Number: ${regNumber}\nPlease keep this ID for access to the conference.\n\nBest regards,\nAHAPN Team`,
+      text: `Dear ${name},\n\nYou have been added to the Edo 2025 waitlist!\nEvent ID: ${eventId}\nPlease keep this ID for access to the conference.\n\nBest regards,\nAHAPN Team`,
       attachments: [
         {
           filename: `event_id_${email}.pdf`,
@@ -270,7 +252,7 @@ app.get("/api/waitlist/:email", async (req, res) => {
   try {
     const user = await Waitlist.findOne({ email: req.params.email });
     if (!user) return res.status(404).json({ message: "User not found" });
-    return res.json({ eventId: user.eventId, regNumber: user.regNumber });
+    return res.json({ eventId: user.eventId }); // Only eventId
   } catch (error) {
     return res
       .status(400)
@@ -305,15 +287,12 @@ app.get("/api/event-id-pdf/:eventId", async (req, res) => {
     doc
       .fontSize(12)
       .text("Edo 2025 Conference ID", { align: "center", color: "#006400" });
-    doc
-      .fontSize(10)
-      .text(`ID: ${user.regNumber}`, 30, 120, { color: "#006400" });
+    doc.fontSize(10).text(`ID: ${user.eventId}`, 30, 120, { color: "#006400" });
     doc.text(`Name: ${user.name.toUpperCase()}`, 30, 140, { color: "#006400" });
     doc.text(`State/Country: ${user.state.toUpperCase()}`, 30, 160, {
       color: "#006400",
     });
-    doc.text(`Reg Number: ${user.regNumber}`, 30, 180, { color: "#006400" });
-    doc.text(`Valid for: Edo 2025 (August 4–9, 2025)`, 30, 200, {
+    doc.text(`Valid for: Edo 2025 (August 4–9, 2025)`, 30, 180, {
       color: "#006400",
     });
 
@@ -324,7 +303,7 @@ app.get("/api/event-id-pdf/:eventId", async (req, res) => {
       height: 8,
       includetext: true,
     });
-    doc.image(barcodeBuffer, 30, 250, { width: 120 });
+    doc.image(barcodeBuffer, 30, 230, { width: 120 });
 
     doc
       .moveDown(11)
