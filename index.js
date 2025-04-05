@@ -43,13 +43,13 @@ const waitlistSchema = new mongoose.Schema({
 });
 const Waitlist = mongoose.model("Waitlist", waitlistSchema);
 
-// Registration ID Schema (for persisting validRegIds)
+// Registration ID Schema
 const regIdSchema = new mongoose.Schema({
   regId: { type: String, required: true, unique: true },
 });
 const RegId = mongoose.model("RegId", regIdSchema);
 
-// Initial hardcoded 20 random 6-digit registration numbers
+// Initial hardcoded registration IDs
 const initialRegIds = [
   "REG174920",
   "REG305187",
@@ -73,7 +73,7 @@ const initialRegIds = [
   "REG246801",
 ];
 
-// Initialize validRegIds in MongoDB (run once or on first start)
+// Initialize regIds in MongoDB
 async function initializeRegIds() {
   const count = await RegId.countDocuments();
   if (count === 0) {
@@ -102,7 +102,7 @@ async function generateEventId() {
   return `${prefix}${nextNumber.toString().padStart(3, "0")}`;
 }
 
-// Generate PDF as a buffer
+// Generate PDF with new ID card design
 function generatePDFBuffer(user) {
   return new Promise((resolve, reject) => {
     const doc = new PDFKit({ size: "A6", margin: 10 });
@@ -111,59 +111,75 @@ function generatePDFBuffer(user) {
     doc.on("data", buffers.push.bind(buffers));
     doc.on("end", () => resolve(Buffer.concat(buffers)));
 
-    doc.image("./ahapn-logo.png", 27, 330, { width: 25, opacity: 0.1 });
-    doc.image("./benin-mask.png", 260, 330, { width: 25, opacity: 0.1 });
+    // Background gradient
+    const gradient = doc.linearGradient(0, 0, 0, 420);
+    gradient.stop(0, "#e6ffe6").stop(1, "#b3ffb3");
+    doc.rect(0, 0, 297, 420).fill(gradient);
 
+    // Header bar
+    doc.rect(0, 0, 297, 40).fill("#006400");
+    doc
+      .fontSize(14)
+      .fillColor("white")
+      .text("Edo 2025 Conference", 0, 12, { align: "center" });
+
+    // Rounded border
+    doc.roundedRect(15, 50, 267, 350, 5).stroke("#006400").lineWidth(2);
+
+    // Photo
     if (user.imageUrl) {
       try {
-        doc.image(user.imageUrl.replace(/^\//, ""), 215, 50, {
-          width: 70,
-          height: 80,
+        doc.image(user.imageUrl.replace(/^\//, ""), 20, 60, {
+          width: 80,
+          height: 100,
         });
+        doc.rect(20, 60, 80, 100).stroke("#006400");
       } catch (error) {
         console.error("Error loading attendee image:", error);
       }
     }
 
+    // Details
     doc
       .fontSize(12)
-      .text("Edo 2025 Conference ID", { align: "center", color: "#006400" });
-    doc.rect(25, 50, 260, 310).stroke("#006400");
-    doc.fontSize(10).text(`ID: ${user.eventId}`, 30, 120, { color: "#006400" });
-    doc.text(`Name: ${user.name.toUpperCase()}`, 30, 140, { color: "#006400" });
-    doc.text(`State/Country: ${user.state.toUpperCase()}`, 30, 160, {
-      color: "#006400",
-    });
-    doc.text(`Valid for: Edo 2025 (August 4–9, 2025)`, 30, 180, {
-      color: "#006400",
-    });
+      .fillColor("#006400")
+      .text(`ID: ${user.eventId}`, 110, 70, { align: "left" });
+    doc
+      .fontSize(10)
+      .fillColor("#333")
+      .text(`Name: ${user.name.toUpperCase()}`, 110, 90);
+    doc
+      .fontSize(10)
+      .fillColor("#333")
+      .text(`State: ${user.state.toUpperCase()}`, 110, 105);
+    doc
+      .fontSize(8)
+      .fillColor("#666")
+      .font("Times-Italic")
+      .text(`Valid: Aug 4–9, 2025`, 110, 120);
 
+    // Barcode
     bwipjs.toBuffer(
       {
         bcid: "code128",
         text: user.eventId,
         scale: 2,
-        height: 8,
+        height: 10,
         includetext: true,
       },
       (err, barcodeBuffer) => {
         if (err) reject(err);
         else {
-          doc.image(barcodeBuffer, 30, 230, { width: 120 }); // Adjusted position
+          doc.image(barcodeBuffer, 70, 280, { width: 150 });
+          // Footer
+          doc.image("./ahapn-logo.png", 128, 350, { width: 40 });
           doc
-            .moveDown(11)
+            .font("Times-Roman")
             .fontSize(6)
-            .text(
-              "Association of Hospital and Administrative Pharmacists of Nigeria (AHAPN)",
-              {
-                align: "center",
-                color: "#006400",
-              }
-            )
-            .text("Contact: info@ahapn.org | Edo 2025 Conference", {
-              align: "center",
-              color: "#006400",
-            });
+            .fillColor("#006400")
+            .text("AHAPN | info@ahapn.org", 0, 390, { align: "center" });
+          // Watermark
+          doc.image("./benin-mask.png", 80, 150, { width: 120, opacity: 0.2 });
           doc.end();
         }
       }
@@ -252,7 +268,7 @@ app.get("/api/waitlist/:email", async (req, res) => {
   try {
     const user = await Waitlist.findOne({ email: req.params.email });
     if (!user) return res.status(404).json({ message: "User not found" });
-    return res.json({ eventId: user.eventId }); // Only eventId
+    return res.json({ eventId: user.eventId });
   } catch (error) {
     return res
       .status(400)
@@ -268,65 +284,13 @@ app.get("/api/event-id-pdf/:eventId", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const doc = new PDFKit({ size: "A6", margin: 10 });
-    doc.rect(25, 50, 260, 310).stroke("#006400");
-    doc.image("./ahapn-logo.png", 27, 330, { width: 25, opacity: 0.1 });
-    doc.image("./benin-mask.png", 260, 330, { width: 25, opacity: 0.1 });
-
-    if (user.imageUrl) {
-      try {
-        doc.image(user.imageUrl.replace(/^\//, ""), 215, 50, {
-          width: 70,
-          height: 80,
-        });
-      } catch (error) {
-        console.error("Error loading attendee image:", error);
-      }
-    }
-
-    doc
-      .fontSize(12)
-      .text("Edo 2025 Conference ID", { align: "center", color: "#006400" });
-    doc.fontSize(10).text(`ID: ${user.eventId}`, 30, 120, { color: "#006400" });
-    doc.text(`Name: ${user.name.toUpperCase()}`, 30, 140, { color: "#006400" });
-    doc.text(`State/Country: ${user.state.toUpperCase()}`, 30, 160, {
-      color: "#006400",
-    });
-    doc.text(`Valid for: Edo 2025 (August 4–9, 2025)`, 30, 180, {
-      color: "#006400",
-    });
-
-    const barcodeBuffer = await bwipjs.toBuffer({
-      bcid: "code128",
-      text: user.eventId,
-      scale: 2,
-      height: 8,
-      includetext: true,
-    });
-    doc.image(barcodeBuffer, 30, 230, { width: 120 });
-
-    doc
-      .moveDown(11)
-      .fontSize(6)
-      .text(
-        "Association of Hospital and Administrative Pharmacists of Nigeria (AHAPN)",
-        {
-          align: "center",
-          color: "#006400",
-        }
-      )
-      .text("Contact: info@ahapn.org | Edo 2025 Conference", {
-        align: "center",
-        color: "#006400",
-      });
-
+    const pdfBuffer = await generatePDFBuffer(user);
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
       `attachment; filename=event_id_${user.email}.pdf`
     );
-    doc.pipe(res);
-    doc.end();
+    res.send(pdfBuffer);
   } catch (error) {
     console.error("Error generating PDF:", error);
     return res
