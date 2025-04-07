@@ -232,13 +232,13 @@ function generatePDFBuffer(user) {
       (err, barcodeBuffer) => {
         if (err) reject(err);
         else {
-          doc.image(barcodeBuffer, 60, 340, { width: 180 });
+          doc.image(barcodeBuffer, 60, 330, { width: 180 });
           // Footer
           doc
             .font("Times-Roman")
             .fontSize(9)
             .fillColor("#006400")
-            .text("AHAPN | ahapn2021@gmail.com", 0, 380, { align: "center" });
+            .text("AHAPN | ahapn2021@gmail.com", 0, 390, { align: "center" });
           doc.end();
         }
       }
