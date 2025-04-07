@@ -150,10 +150,9 @@ async function generateEventId() {
       : 0;
   const nextNumber = lastNumber + 1;
   return `${prefix}${nextNumber.toString().padStart(4, "0")}`; // 4 digits
-  // For 6 digits, use: return `${prefix}${nextNumber.toString().padStart(6, "0")}`;
 }
 
-// Generate PDF with new ID card design and bigger logo
+// Generate PDF with adjusted logo size and positioning
 function generatePDFBuffer(user) {
   return new Promise((resolve, reject) => {
     const doc = new PDFKit({ size: "A6", margin: 10 });
@@ -221,14 +220,14 @@ function generatePDFBuffer(user) {
       (err, barcodeBuffer) => {
         if (err) reject(err);
         else {
-          doc.image(barcodeBuffer, 70, 280, { width: 150 });
-          // Footer with bigger logo
-          doc.image("./ahapn-logo.png", 108, 340, { width: 80 }); // Increased from 40 to 80
+          doc.image(barcodeBuffer, 70, 300, { width: 150 }); // Moved down to y: 300
+          // Footer with adjusted logo
+          doc.image("./ahapn-logo.png", 118, 340, { width: 60 }); // Reduced to 60px, centered
           doc
             .font("Times-Roman")
             .fontSize(6)
             .fillColor("#006400")
-            .text("AHAPN | ahapn2021@gmail.com", 0, 400, { align: "center" }); // Updated email
+            .text("AHAPN | ahapn2021@gmail.com", 0, 405, { align: "center" }); // Moved down to y: 405
           // Watermark
           doc.image("./benin-mask.png", 80, 150, { width: 120, opacity: 0.2 });
           doc.end();
