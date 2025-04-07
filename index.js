@@ -236,9 +236,9 @@ function generatePDFBuffer(user) {
           // Footer
           doc
             .font("Times-Roman")
-            .fontSize(6)
+            .fontSize(8)
             .fillColor("#006400")
-            .text("AHAPN | ahapn2021@gmail.com", 0, 395, { align: "center" });
+            .text("AHAPN | ahapn2021@gmail.com", 0, 380, { align: "center" });
           doc.end();
         }
       }
