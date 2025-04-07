@@ -199,26 +199,26 @@ function generatePDFBuffer(user) {
     doc
       .fontSize(10)
       .fillColor("#333")
-      .text(`Name: ${user.name.toUpperCase()}`, 20, 170, {
+      .text(`Name: ${user.name.toUpperCase()}`, 20, 180, {
         width: 257,
         align: "left",
       });
     doc
       .fontSize(10)
       .fillColor("#333")
-      .text(`State: ${user.state.toUpperCase()}`, 20, 190, {
+      .text(`State: ${user.state.toUpperCase()}`, 20, 200, {
         width: 257,
         align: "left",
       });
     doc
       .fontSize(12)
       .fillColor("#006400")
-      .text(`ID: ${user.eventId}`, 20, 210, { align: "left" });
+      .text(`ID: ${user.eventId}`, 20, 220, { align: "left" });
     doc
       .fontSize(8)
       .fillColor("#666")
       .font("Times-Italic")
-      .text(`Valid: Aug 4–9, 2025`, 20, 230);
+      .text(`Valid: Aug 4–9, 2025`, 20, 240);
 
     // Barcode
     bwipjs.toBuffer(
@@ -232,11 +232,11 @@ function generatePDFBuffer(user) {
       (err, barcodeBuffer) => {
         if (err) reject(err);
         else {
-          doc.image(barcodeBuffer, 60, 280, { width: 180 });
+          doc.image(barcodeBuffer, 60, 340, { width: 180 });
           // Footer
           doc
             .font("Times-Roman")
-            .fontSize(8)
+            .fontSize(9)
             .fillColor("#006400")
             .text("AHAPN | ahapn2021@gmail.com", 0, 380, { align: "center" });
           doc.end();
