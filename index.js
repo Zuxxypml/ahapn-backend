@@ -152,7 +152,7 @@ async function generateEventId() {
   return `${prefix}${nextNumber.toString().padStart(4, "0")}`;
 }
 
-// Generate PDF with maximized sizes on one page
+// Generate PDF with new layout
 function generatePDFBuffer(user) {
   return new Promise((resolve, reject) => {
     const doc = new PDFKit({ size: "A6", margin: 10 });
@@ -176,42 +176,51 @@ function generatePDFBuffer(user) {
     // Rounded border
     doc.roundedRect(15, 50, 267, 350, 5).stroke("#006400").lineWidth(2);
 
-    // Photo
+    // Benin mask (left)
+    doc.image("./benin-mask.png", 20, 60, { width: 80, opacity: 0.2 });
+
+    // Photo (centered)
     if (user.imageUrl) {
       try {
-        doc.image(user.imageUrl.replace(/^\//, ""), 20, 60, {
+        doc.image(user.imageUrl.replace(/^\//, ""), 108, 60, {
           width: 80,
           height: 100,
         });
-        doc.rect(20, 60, 80, 100).stroke("#006400");
+        doc.rect(108, 60, 80, 100).stroke("#006400");
       } catch (error) {
         console.error("Error loading attendee image:", error);
       }
     }
 
-    // Details
+    // AHAPN logo (right)
+    doc.image("./ahapn-logo.png", 207, 60, { width: 70 });
+
+    // Details below photo (wrapped for long names)
+    doc
+      .fontSize(10)
+      .fillColor("#333")
+      .text(`Name: ${user.name.toUpperCase()}`, 20, 170, {
+        width: 257,
+        align: "left",
+      });
+    doc
+      .fontSize(10)
+      .fillColor("#333")
+      .text(`State: ${user.state.toUpperCase()}`, 20, 190, {
+        width: 257,
+        align: "left",
+      });
     doc
       .fontSize(12)
       .fillColor("#006400")
-      .text(`ID: ${user.eventId}`, 110, 70, { align: "left" });
-    doc
-      .fontSize(10)
-      .fillColor("#333")
-      .text(`Name: ${user.name.toUpperCase()}`, 110, 90);
-    doc
-      .fontSize(10)
-      .fillColor("#333")
-      .text(`State: ${user.state.toUpperCase()}`, 110, 105);
+      .text(`ID: ${user.eventId}`, 20, 210, { align: "left" });
     doc
       .fontSize(8)
       .fillColor("#666")
       .font("Times-Italic")
-      .text(`Valid: Aug 4–9, 2025`, 110, 120);
+      .text(`Valid: Aug 4–9, 2025`, 20, 230);
 
-    // Benin mask watermark (maximized)
-    doc.image("./benin-mask.png", 80, 150, { width: 140, opacity: 0.2 });
-
-    // Barcode (maximized)
+    // Barcode
     bwipjs.toBuffer(
       {
         bcid: "code128",
@@ -223,9 +232,8 @@ function generatePDFBuffer(user) {
       (err, barcodeBuffer) => {
         if (err) reject(err);
         else {
-          doc.image(barcodeBuffer, 60, 280, { width: 150 }); // Bigger barcode
-          // Footer with maximized logo
-          doc.image("./ahapn-logo.png", 108, 300, { width: 70 }); // Max practical size
+          doc.image(barcodeBuffer, 60, 280, { width: 180 });
+          // Footer
           doc
             .font("Times-Roman")
             .fontSize(6)
