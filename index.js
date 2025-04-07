@@ -223,9 +223,9 @@ function generatePDFBuffer(user) {
       (err, barcodeBuffer) => {
         if (err) reject(err);
         else {
-          doc.image(barcodeBuffer, 60, 280, { width: 180 }); // Bigger barcode
+          doc.image(barcodeBuffer, 60, 280, { width: 150 }); // Bigger barcode
           // Footer with maximized logo
-          doc.image("./ahapn-logo.png", 108, 350, { width: 80 }); // Max practical size
+          doc.image("./ahapn-logo.png", 108, 300, { width: 70 }); // Max practical size
           doc
             .font("Times-Roman")
             .fontSize(6)
