@@ -152,7 +152,7 @@ async function generateEventId() {
   return `${prefix}${nextNumber.toString().padStart(4, "0")}`;
 }
 
-// Generate PDF with adjusted layout
+// Generate PDF with maximized sizes on one page
 function generatePDFBuffer(user) {
   return new Promise((resolve, reject) => {
     const doc = new PDFKit({ size: "A6", margin: 10 });
@@ -208,28 +208,29 @@ function generatePDFBuffer(user) {
       .font("Times-Italic")
       .text(`Valid: Aug 4–9, 2025`, 110, 120);
 
-    // Barcode
+    // Benin mask watermark (maximized)
+    doc.image("./benin-mask.png", 80, 150, { width: 140, opacity: 0.2 });
+
+    // Barcode (maximized)
     bwipjs.toBuffer(
       {
         bcid: "code128",
         text: user.eventId,
         scale: 2,
-        height: 10,
+        height: 12,
         includetext: true,
       },
       (err, barcodeBuffer) => {
         if (err) reject(err);
         else {
-          doc.image(barcodeBuffer, 70, 300, { width: 150 }); // Adjusted to y: 300
-          // Footer with adjusted logo
-          doc.image("./ahapn-logo.png", 118, 340, { width: 60 }); // Kept at 60px
+          doc.image(barcodeBuffer, 60, 280, { width: 180 }); // Bigger barcode
+          // Footer with maximized logo
+          doc.image("./ahapn-logo.png", 108, 350, { width: 80 }); // Max practical size
           doc
             .font("Times-Roman")
             .fontSize(6)
             .fillColor("#006400")
-            .text("AHAPN | ahapn2021@gmail.com", 0, 405, { align: "center" }); // Updated email, y: 405
-          // Watermark
-          doc.image("./benin-mask.png", 80, 150, { width: 120, opacity: 0.2 });
+            .text("AHAPN | ahapn2021@gmail.com", 0, 395, { align: "center" });
           doc.end();
         }
       }
