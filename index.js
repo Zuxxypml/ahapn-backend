@@ -199,26 +199,26 @@ function generatePDFBuffer(user) {
     doc
       .fontSize(10)
       .fillColor("#333")
-      .text(`Name: ${user.name.toUpperCase()}`, 20, 180, {
+      .text(`Name: ${user.name.toUpperCase()}`, 20, 200, {
         width: 257,
         align: "center",
       });
     doc
       .fontSize(10)
       .fillColor("#333")
-      .text(`State: ${user.state.toUpperCase()}`, 20, 200, {
+      .text(`State: ${user.state.toUpperCase()}`, 20, 220, {
         width: 257,
         align: "center",
       });
     doc
       .fontSize(12)
       .fillColor("#006400")
-      .text(`ID: ${user.eventId}`, 20, 220, { width: 257, align: "center" });
+      .text(`ID: ${user.eventId}`, 20, 240, { width: 257, align: "center" });
     doc
       .fontSize(8)
       .fillColor("#666")
       .font("Times-Italic")
-      .text(`Valid: Aug 4–9, 2025`, 20, 240, { width: 257, align: "center" });
+      .text(`Valid: Aug 4–9, 2025`, 20, 260, { width: 257, align: "center" });
 
     // Barcode
     bwipjs.toBuffer(
