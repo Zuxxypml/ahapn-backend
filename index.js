@@ -152,7 +152,7 @@ async function generateEventId() {
   return `${prefix}${nextNumber.toString().padStart(4, "0")}`;
 }
 
-// Generate PDF with new layout
+// Generate PDF with centered info
 function generatePDFBuffer(user) {
   return new Promise((resolve, reject) => {
     const doc = new PDFKit({ size: "A6", margin: 10 });
@@ -195,30 +195,30 @@ function generatePDFBuffer(user) {
     // AHAPN logo (right)
     doc.image("./ahapn-logo.png", 207, 60, { width: 70 });
 
-    // Details below photo (wrapped for long names)
+    // Details below photo (centered, wrapped for long names)
     doc
       .fontSize(10)
       .fillColor("#333")
       .text(`Name: ${user.name.toUpperCase()}`, 20, 180, {
         width: 257,
-        align: "left",
+        align: "center",
       });
     doc
       .fontSize(10)
       .fillColor("#333")
       .text(`State: ${user.state.toUpperCase()}`, 20, 200, {
         width: 257,
-        align: "left",
+        align: "center",
       });
     doc
       .fontSize(12)
       .fillColor("#006400")
-      .text(`ID: ${user.eventId}`, 20, 220, { align: "left" });
+      .text(`ID: ${user.eventId}`, 20, 220, { width: 257, align: "center" });
     doc
       .fontSize(8)
       .fillColor("#666")
       .font("Times-Italic")
-      .text(`Valid: Aug 4–9, 2025`, 20, 240);
+      .text(`Valid: Aug 4–9, 2025`, 20, 240, { width: 257, align: "center" });
 
     // Barcode
     bwipjs.toBuffer(
