@@ -38,7 +38,7 @@ const waitlistSchema = new mongoose.Schema({
   state: { type: String, required: true },
   regId: { type: String, required: true },
   imageUrl: { type: String },
-  eventId: { type: String, required: true, unique: true }, // e.g., "edo-ahapn-0001"
+  eventId: { type: String, required: true, unique: true }, // e.g., "edoahapn-001"
   timestamp: { type: Date, default: Date.now },
 });
 const Waitlist = mongoose.model("Waitlist", waitlistSchema);
@@ -49,7 +49,7 @@ const regIdSchema = new mongoose.Schema({
 });
 const RegId = mongoose.model("RegId", regIdSchema);
 
-// Initial 70 hardcoded registration IDs (20 original + 50 new)
+// Initial hardcoded registration IDs
 const initialRegIds = [
   "REG174920",
   "REG305187",
@@ -71,56 +71,6 @@ const initialRegIds = [
   "REG034197",
   "REG159382",
   "REG246801",
-  "REG371294",
-  "REG482105",
-  "REG593216",
-  "REG604327",
-  "REG715438",
-  "REG826549",
-  "REG937650",
-  "REG048761",
-  "REG159872",
-  "REG260983",
-  "REG371094",
-  "REG482105",
-  "REG593216",
-  "REG704327",
-  "REG815438",
-  "REG926549",
-  "REG037650",
-  "REG148761",
-  "REG259872",
-  "REG360983",
-  "REG471094",
-  "REG582105",
-  "REG693216",
-  "REG804327",
-  "REG915438",
-  "REG026549",
-  "REG137650",
-  "REG248761",
-  "REG359872",
-  "REG460983",
-  "REG571094",
-  "REG682105",
-  "REG793216",
-  "REG904327",
-  "REG015438",
-  "REG126549",
-  "REG237650",
-  "REG348761",
-  "REG459872",
-  "REG560983",
-  "REG671094",
-  "REG782105",
-  "REG893216",
-  "REG904327",
-  "REG015438",
-  "REG126549",
-  "REG237650",
-  "REG348761",
-  "REG459872",
-  "REG560983",
 ];
 
 // Initialize regIds in MongoDB
@@ -130,7 +80,7 @@ async function initializeRegIds() {
     console.log("Initializing registration IDs...");
     const regIdDocs = initialRegIds.map((regId) => ({ regId }));
     await RegId.insertMany(regIdDocs);
-    console.log("Initialized 70 registration IDs.");
+    console.log("Initialized 20 registration IDs.");
   }
 }
 
@@ -140,19 +90,19 @@ async function loadValidRegIds() {
   return regIds.map((doc) => doc.regId);
 }
 
-// Generate sequential eventId (e.g., "edo-ahapn-0001" with 4 digits)
+// Generate sequential eventId (e.g., "edoahapn-001")
 async function generateEventId() {
-  const prefix = "edo-ahapn-";
+  const prefix = "edoahapn-";
   const lastEntry = await Waitlist.findOne().sort({ timestamp: -1 });
   const lastNumber =
     lastEntry && lastEntry.eventId.startsWith(prefix)
-      ? parseInt(lastEntry.eventId.split("-")[2], 10)
+      ? parseInt(lastEntry.eventId.split("-")[1], 10)
       : 0;
   const nextNumber = lastNumber + 1;
-  return `${prefix}${nextNumber.toString().padStart(4, "0")}`; // 4 digits
+  return `${prefix}${nextNumber.toString().padStart(3, "0")}`;
 }
 
-// Generate PDF with adjusted logo size and positioning
+// Generate PDF with new ID card design
 function generatePDFBuffer(user) {
   return new Promise((resolve, reject) => {
     const doc = new PDFKit({ size: "A6", margin: 10 });
@@ -220,14 +170,14 @@ function generatePDFBuffer(user) {
       (err, barcodeBuffer) => {
         if (err) reject(err);
         else {
-          doc.image(barcodeBuffer, 70, 300, { width: 150 }); // Moved down to y: 300
-          // Footer with adjusted logo
-          doc.image("./ahapn-logo.png", 118, 340, { width: 60 }); // Reduced to 60px, centered
+          doc.image(barcodeBuffer, 70, 280, { width: 150 });
+          // Footer
+          doc.image("./ahapn-logo.png", 128, 330, { width: 60 });
           doc
             .font("Times-Roman")
             .fontSize(6)
             .fillColor("#006400")
-            .text("AHAPN | ahapn2021@gmail.com", 0, 405, { align: "center" }); // Moved down to y: 405
+            .text("AHAPN | info@ahapn.org", 0, 390, { align: "center" });
           // Watermark
           doc.image("./benin-mask.png", 80, 150, { width: 120, opacity: 0.2 });
           doc.end();
