@@ -176,8 +176,8 @@ function generatePDFBuffer(user) {
     // Rounded border
     doc.roundedRect(15, 50, 267, 350, 5).stroke("#006400").lineWidth(2);
 
-    // Benin mask (left)
-    doc.image("./benin-mask.png", 20, 60, { width: 80, opacity: 0.2 });
+    // AHAPN mask (left)
+    doc.image("./ahapn-logo.png", 207, 60, { width: 70 });
 
     // Photo (centered)
     if (user.imageUrl) {
@@ -192,8 +192,8 @@ function generatePDFBuffer(user) {
       }
     }
 
-    // AHAPN logo (right)
-    doc.image("./ahapn-logo.png", 207, 60, { width: 70 });
+    // Benin logo (right)
+    doc.image("./benin-mask.png", 20, 60, { width: 80, opacity: 0.2 });
 
     // Details below photo (centered, wrapped for long names)
     doc
