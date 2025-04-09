@@ -49,7 +49,7 @@ const regIdSchema = new mongoose.Schema({
 });
 const RegId = mongoose.model("RegId", regIdSchema);
 
-// Initial 70 hardcoded registration IDs (20 original + 50 new)
+// Initial 70 hardcoded registration IDs (20 original + 50 new, all unique)
 const initialRegIds = [
   "REG174920",
   "REG305187",
@@ -82,8 +82,6 @@ const initialRegIds = [
   "REG159872",
   "REG260983",
   "REG371094",
-  "REG482105",
-  "REG593216",
   "REG704327",
   "REG815438",
   "REG926549",
@@ -114,13 +112,15 @@ const initialRegIds = [
   "REG671094",
   "REG782105",
   "REG893216",
-  "REG904327",
-  "REG015438",
-  "REG126549",
-  "REG237650",
-  "REG348761",
-  "REG459872",
-  "REG560983",
+  "REG571205",
+  "REG682316",
+  "REG793427",
+  "REG804538",
+  "REG915649",
+  "REG026750",
+  "REG137861",
+  "REG248972",
+  "REG359083",
 ];
 
 // Initialize regIds in MongoDB
@@ -152,7 +152,7 @@ async function generateEventId() {
   return `${prefix}${nextNumber.toString().padStart(4, "0")}`;
 }
 
-// Generate PDF with centered info
+// Generate PDF with updated header and footer
 function generatePDFBuffer(user) {
   return new Promise((resolve, reject) => {
     const doc = new PDFKit({ size: "A6", margin: 10 });
@@ -171,12 +171,18 @@ function generatePDFBuffer(user) {
     doc
       .fontSize(14)
       .fillColor("white")
-      .text("Edo 2025 Conference", 0, 12, { align: "center" });
+      .text("Edo 2025", 0, 8, { align: "center" });
+    doc
+      .fontSize(9)
+      .fillColor("white")
+      .text("26th Annual National Scientific Conference", 0, 25, {
+        align: "center",
+      });
 
     // Rounded border
     doc.roundedRect(15, 50, 267, 350, 5).stroke("#006400").lineWidth(2);
 
-    // AHAPN mask (left)
+    // AHAPN logo (left)
     doc.image("./ahapn-logo.png", 20, 60, { width: 70 });
 
     // Photo (centered)
@@ -192,7 +198,7 @@ function generatePDFBuffer(user) {
       }
     }
 
-    // Benin logo (right)
+    // Benin mask (right)
     doc.image("./benin-mask.png", 207, 60, { width: 80, opacity: 0.2 });
 
     // Details below photo (centered, wrapped for long names)
@@ -233,12 +239,14 @@ function generatePDFBuffer(user) {
         if (err) reject(err);
         else {
           doc.image(barcodeBuffer, 60, 330, { width: 180 });
-          // Footer
+          // Footer with phone number
           doc
             .font("Times-Roman")
             .fontSize(9)
             .fillColor("#006400")
-            .text("AHAPN | ahapn2021@gmail.com", 0, 390, { align: "center" });
+            .text("AHAPN | ahapn2021@gmail.com | 08079238160", 0, 390, {
+              align: "center",
+            });
           doc.end();
         }
       }
