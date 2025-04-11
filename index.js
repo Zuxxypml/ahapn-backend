@@ -219,7 +219,10 @@ function generatePDFBuffer(user) {
     doc
       .fontSize(12)
       .fillColor("#006400")
-      .text(`ID: ${user.eventId}`, 20, 240, { width: 257, align: "center" });
+      .text(`ID: ${user.eventId.toUpperCase()}`, 20, 240, {
+        width: 257,
+        align: "center",
+      });
     doc
       .fontSize(8)
       .fillColor("#666")
