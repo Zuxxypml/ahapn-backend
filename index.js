@@ -171,11 +171,11 @@ function generatePDFBuffer(user) {
     doc
       .fontSize(14)
       .fillColor("white")
-      .text("Edo 2025", 0, 8, { align: "center" });
+      .text("EDO 2025", 0, 8, { align: "center" });
     doc
       .fontSize(9)
       .fillColor("white")
-      .text("26th Annual National Scientific Conference", 0, 25, {
+      .text("26TH ANNUAL NATIONAL SCIENTIFIC CONFERENCE", 0, 25, {
         align: "center",
       });
 
