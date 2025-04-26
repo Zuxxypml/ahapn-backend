@@ -1098,6 +1098,19 @@ app.get("/api/waitlist/:email", async (req, res) => {
   }
 });
 
+// API: Get total registered count
+app.get("/api/waitlist/count", async (req, res) => {
+  try {
+    const count = await Waitlist.countDocuments();
+    res.json({ count });
+  } catch (error) {
+    console.error("Error counting waitlist:", error);
+    res
+      .status(500)
+      .json({ message: "Error counting waitlist", error: error.message });
+  }
+});
+
 // API: Generate and serve event ID PDF
 app.get("/api/event-id-pdf/:eventId", async (req, res) => {
   try {
