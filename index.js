@@ -24,12 +24,6 @@ app.use(express.json());
 app.use(cors({ origin: "https://ahapnng.org" }));
 app.use("/uploads", express.static("uploads"));
 
-// MongoDB Connection
-await mongoose
-  .connect(process.env.MONGO_URI || "mongodb://localhost:27017/ahapnDatabase")
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.log("MongoDB connection error:", err));
-
 // Waitlist Schema
 const waitlistSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -1018,9 +1012,6 @@ function generatePDFBuffer(user) {
   });
 }
 
-// Initialize regIds on startup
-await initializeRegIds().catch(console.error);
-
 // API: Add to waitlist
 app.post("/api/waitlist", upload.single("image"), async (req, res) => {
   try {
@@ -1130,4 +1121,17 @@ app.get("/api/event-id-pdf/:eventId", async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || 5000, () => console.log("Server on port 5000"));
+async function startServer() {
+  // MongoDB Connection
+  await mongoose
+    .connect(process.env.MONGO_URI || "mongodb://localhost:27017/ahapnDatabase")
+    .then(() => console.log("MongoDB connected"))
+    .catch((err) => console.log("MongoDB connection error:", err));
+  // Initialize regIds on startup
+  await initializeRegIds().catch(console.error);
+  app.listen(process.env.PORT || 5000, () =>
+    console.log("Server on port 5000")
+  );
+}
+
+startServer().catch(console.error);
