@@ -5,6 +5,29 @@ import PDFKit from "pdfkit";
 import bwipjs from "bwip-js";
 import fs from "fs";
 
+export const downloadEventIdPdf = async (req, res) => {
+  try {
+    const user = await Waitlist.findOne({ eventId: req.params.eventId });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const pdfBuffer = await generatePDFBuffer(user);
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=event_id_${user.email}.pdf`
+    );
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    return res
+      .status(500)
+      .json({ message: "Error generating PDF", error: error.message });
+  }
+};
+
 export const getWaitlistCount = async (req, res) => {
   try {
     const count = await Waitlist.countDocuments();

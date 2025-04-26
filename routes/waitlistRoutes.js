@@ -4,6 +4,7 @@ import {
   addToWaitlist,
   getWaitlistCount,
   getUserByEmail,
+  downloadEventIdPdf,
 } from "../controllers/waitlistController.js";
 
 const router = express.Router();
@@ -29,5 +30,8 @@ router.get("/waitlist/count", getWaitlistCount);
 
 // Get a user's eventId by their email
 router.get("/waitlist/:email", getUserByEmail);
+
+// Add download route!
+router.get("/event-id-pdf/:eventId", downloadEventIdPdf);
 
 export default router;
