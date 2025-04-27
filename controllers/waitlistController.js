@@ -67,7 +67,7 @@ export const addToWaitlist = async (req, res) => {
 
     // Late Registration logic
     const today = new Date();
-    const lateRegistrationStart = new Date("2025-07-01"); // 👈 same date as frontend
+    const lateRegistrationStart = new Date("2025-04-26"); // 👈 same date as frontend
     const isLatePeriod = today >= lateRegistrationStart;
 
     if (isLatePeriod) {
