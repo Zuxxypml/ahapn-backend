@@ -4,6 +4,7 @@ import nodemailer from "nodemailer";
 import PDFKit from "pdfkit";
 import bwipjs from "bwip-js";
 import fs from "fs";
+import LateRegId from "../models/LateRegIds.model.js";
 
 export const downloadEventIdPdf = async (req, res) => {
   try {
@@ -53,16 +54,37 @@ export const getUserByEmail = async (req, res) => {
 
 export const addToWaitlist = async (req, res) => {
   try {
-    const { name, email, phoneNumber, state, regId } = req.body;
+    const { name, email, phoneNumber, state, regId, lateRegId } = req.body;
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
-    // Validate registration ID
-    const validRegIds = await RegId.find().select("regId -_id");
-    const validList = validRegIds.map((doc) => doc.regId);
-    if (!validList.includes(regId)) {
+    // First check Registration Number
+    const normalCode = await RegId.findOne({ regId });
+    if (!normalCode) {
       return res
         .status(400)
-        .json({ message: "Invalid or expired registration ID" });
+        .json({ message: "Invalid or expired Registration Number" });
+    }
+
+    // Late Registration logic
+    const today = new Date();
+    const lateRegistrationStart = new Date("2025-07-01"); // 👈 same date as frontend
+    const isLatePeriod = today >= lateRegistrationStart;
+
+    if (isLatePeriod) {
+      // During Late Period, LateRegId must be provided and valid
+      if (!lateRegId) {
+        return res.status(400).json({
+          message:
+            "Late Registration Code required during late registration period.",
+        });
+      }
+
+      const lateCode = await LateRegId.findOne({ regId: lateRegId });
+      if (!lateCode) {
+        return res
+          .status(400)
+          .json({ message: "Invalid or expired Late Registration Code." });
+      }
     }
 
     // Generate Event ID
@@ -86,8 +108,13 @@ export const addToWaitlist = async (req, res) => {
     };
     await Waitlist.create(newEntry);
 
-    // Remove used regId
+    // Remove used regId (ONLY ONCE)
     await RegId.deleteOne({ regId });
+
+    // Remove used lateRegId if needed
+    if (isLatePeriod && lateRegId) {
+      await LateRegId.deleteOne({ regId: lateRegId });
+    }
 
     // Generate PDF
     const pdfBuffer = await generatePDFBuffer(newEntry);
@@ -104,7 +131,7 @@ export const addToWaitlist = async (req, res) => {
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Welcome to Edo 2025 Waitlist",
+      subject: "Welcome to AHAPN Edo 2025 Waitlist",
       text: `Dear ${name},\n\nYou have been added to the Edo 2025 waitlist!\nEvent ID: ${eventId}\nPlease keep this ID for access to the conference.\n\nBest regards,\nAHAPN Team`,
       attachments: [
         {

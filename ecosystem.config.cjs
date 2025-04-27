@@ -1,27 +1,27 @@
+// ecosystem.config.js
+
 module.exports = {
   apps: [
     {
-      name: "backend",               // PM2 process name
-      script: "index.js",             // Entry point file
-      interpreter: "node",            // Interpreter for ESM
-      instances: 1,                   // Number of instances (1 for now)
-      autorestart: true,              // Auto-restart if app crashes
-      watch: ["."],                   // Watch the current directory for changes
+      name: "backend", // PM2 process name
+      script: "server.js", // Main file
+      instances: 1, // Single instance (you can change to "max" later for cluster mode)
+      autorestart: true, // Restart app if crash
+      watch: ["."], // Watch project files for changes (only during development)
       ignore_watch: [
-        "node_modules",               // Ignore node_modules folder
-        "uploads",                    // Ignore uploaded files folder
-        "logs",                       // Ignore log files folder (if you have any)
-        "ecosystem.config.cjs"         // Ignore the PM2 config itself (optional)
+        "node_modules", // Don't watch node_modules (useless)
+        "uploads", // Don't watch uploads folder
+        "logs", // Don't watch logs folder
+        "ecosystem.config.js", // Don't restart because of PM2 config change
       ],
-      max_memory_restart: "500M",      // Restart app if memory usage > 500MB
+      max_memory_restart: "500M", // Restart app if memory exceeds 500MB
       env: {
-        NODE_ENV: "production",        // Set NODE_ENV to production
-        PORT: 5000,                    // Optional: in case you want PORT in env too
+        NODE_ENV: "production", // Set environment mode
+        PORT: 5000, // Default port (optional if already inside .env)
       },
-      error_file: "./logs/err.log",    // Save errors here (you can create "logs" folder)
-      out_file: "./logs/out.log",      // Save console.log outputs here
-      log_date_format: "YYYY-MM-DD HH:mm:ss", // Neat timestamps for logs
+      error_file: "./logs/err.log", // Path to error logs
+      out_file: "./logs/out.log", // Path to normal console logs
+      log_date_format: "YYYY-MM-DD HH:mm:ss", // Timestamp format in logs
     },
   ],
 };
-
