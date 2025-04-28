@@ -828,6 +828,7 @@ const initialRegIds = [
   "007360",
   "026366",
   "033835",
+  "008118",
 ];
 
 export default initialRegIds;
