@@ -1,0 +1,21 @@
+2025-04-27 10:44:10: Error loading attendee image: Error: Unknown image format.
+    at PDFImage.open (/home/appuser/ahapn-backend/node_modules/pdfkit/js/pdfkit.js:4036:13)
+    at PDFDocument.openImage (/home/appuser/ahapn-backend/node_modules/pdfkit/js/pdfkit.js:4235:24)
+    at PDFDocument.image (/home/appuser/ahapn-backend/node_modules/pdfkit/js/pdfkit.js:4064:22)
+    at file:///home/appuser/ahapn-backend/controllers/waitlistController.js:192:13
+    at new Promise (<anonymous>)
+    at generatePDFBuffer (file:///home/appuser/ahapn-backend/controllers/waitlistController.js:159:10)
+    at addToWaitlist (file:///home/appuser/ahapn-backend/controllers/waitlistController.js:120:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-04-27 10:44:20: Error loading attendee image: Error: Unknown image format.
+    at PDFImage.open (/home/appuser/ahapn-backend/node_modules/pdfkit/js/pdfkit.js:4036:13)
+    at PDFDocument.openImage (/home/appuser/ahapn-backend/node_modules/pdfkit/js/pdfkit.js:4235:24)
+    at PDFDocument.image (/home/appuser/ahapn-backend/node_modules/pdfkit/js/pdfkit.js:4064:22)
+    at file:///home/appuser/ahapn-backend/controllers/waitlistController.js:192:13
+    at new Promise (<anonymous>)
+    at generatePDFBuffer (file:///home/appuser/ahapn-backend/controllers/waitlistController.js:159:10)
+    at downloadEventIdPdf (file:///home/appuser/ahapn-backend/controllers/waitlistController.js:16:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-04-27 23:58:36: (node:603359) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 close listeners added to [Socket]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+2025-04-27 23:58:36: (node:603359) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 error listeners added to [Socket]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
