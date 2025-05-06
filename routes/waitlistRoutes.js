@@ -5,6 +5,8 @@ import {
   getWaitlistCount,
   getUserByEmail,
   downloadEventIdPdf,
+  downloadCertificateByEmail,
+  sendCertificatesToAllUsers,
 } from "../controllers/waitlistController.js";
 
 const router = express.Router();
@@ -33,5 +35,11 @@ router.get("/waitlist/:email", getUserByEmail);
 
 // Add download route!
 router.get("/event-id-pdf/:eventId", downloadEventIdPdf);
+
+router.get("/download-certificate/:email", downloadCertificateByEmail);
+// router.get("/admin/send-certificates", async (req, res) => {
+//   await sendCertificatesToAllUsers();
+//   res.send("Certificate emails sent!");
+// });
 
 export default router;

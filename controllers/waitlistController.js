@@ -154,6 +154,103 @@ export const addToWaitlist = async (req, res) => {
   }
 };
 
+// send certs
+export const sendCertificatesToAllUsers = async () => {
+  const users = await Waitlist.find({});
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  for (const user of users) {
+    try {
+      const certBuffer = await generateCertificateBuffer(
+        user.name.toUpperCase()
+      );
+
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: user.email,
+        subject: "Your Certificate – AHAPN Edo 2025",
+        text: `Dear ${user.name},\n\nAttached is your certificate for attending the 26th AHAPN National Conference.\n\nBest regards,\nAHAPN Team`,
+        attachments: [
+          {
+            filename: `certificate_${user.name}.pdf`,
+            content: certBuffer,
+            contentType: "application/pdf",
+          },
+        ],
+      });
+
+      console.log(`✅ Sent to ${user.email}`);
+    } catch (err) {
+      console.error(`❌ Failed to send to ${user.email}:`, err.message);
+    }
+  }
+};
+// Generate Cert buffer
+async function generateCertificateBuffer(name) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFKit({ size: "A4", layout: "landscape" });
+    const buffers = [];
+
+    doc.on("data", buffers.push.bind(buffers));
+    doc.on("end", () => resolve(Buffer.concat(buffers)));
+
+    // Draw background certificate template
+    doc.image("./assets/certificate-template.jpeg", 0, 0, {
+      width: 842, // A4 landscape width in points
+      height: 595,
+    });
+
+    // Name text
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(28)
+      .fillColor("black")
+      .text(name, 275, 260, {
+        align: "center",
+      });
+
+    doc.end();
+  });
+}
+
+// Download cert
+export const downloadCertificateByEmail = async (req, res) => {
+  try {
+    const user = await Waitlist.findOne({ email: req.params.email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Check if 2 months have passed since event
+    const eventEndDate = new Date("2025-08-10"); // or use createdAt
+    const now = new Date();
+    const diffMonths = (now - eventEndDate) / (1000 * 60 * 60 * 24 * 30);
+
+    // if (diffMonths < 2) {
+    //   return res.status(403).json({
+    //     message: "Certificate will be available 2 months after the event.",
+    //   });
+    // }
+
+    const buffer = await generateCertificateBuffer(user.name.toUpperCase());
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=certificate_${user.name}.pdf`
+    );
+    res.send(buffer);
+  } catch (err) {
+    console.error("Certificate error:", err);
+    res.status(500).json({ message: "Could not generate certificate." });
+  }
+};
+
 // Generate PDF function
 async function generatePDFBuffer(user) {
   return new Promise((resolve, reject) => {
