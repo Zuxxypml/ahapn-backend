@@ -1,4 +1,3 @@
-// server.js
 import mongoose from "mongoose";
 import app from "./app.js";
 import RegId from "./models/RegId.model.js";
@@ -7,50 +6,88 @@ import initialRegIds from "./data/initialRegIds.js";
 import initialLateRegIds from "./data/initialLateRegIds.js";
 import dotenv from "dotenv";
 
-dotenv.config();
+// ===================== CONFIGURATION ===================== //
+dotenv.config({ path: ".env" });
 
-// Function to initialize RegIds
+// ===================== DATABASE INITIALIZATION ===================== //
+
+/**
+ * Initialize registration IDs if database is empty
+ */
 async function initializeRegIds() {
-  const count = await RegId.countDocuments();
-  if (count === 0) {
-    console.log("Initializing registration IDs...");
-    const regIdDocs = initialRegIds.map((regId) => ({ regId }));
-    await RegId.insertMany(regIdDocs);
-    console.log(`Initialized ${initialRegIds.length} registration IDs.`);
+  try {
+    const count = await RegId.estimatedDocumentCount();
+    if (count === 0) {
+      console.log("📝 Initializing registration IDs...");
+      await RegId.insertMany(initialRegIds.map((regId) => ({ regId })));
+      console.log(`✅ Initialized ${initialRegIds.length} registration IDs`);
+    }
+  } catch (error) {
+    console.error("❌ Failed to initialize registration IDs:", error);
+    throw error;
   }
 }
 
-// Function to initialize LateRegIds
+/**
+ * Initialize late registration IDs if database is empty
+ */
 async function initializeLateRegIds() {
-  const count = await LateRegId.countDocuments();
-  if (count === 0) {
-    console.log("Initializing late registration IDs...");
-    const lateRegDocs = initialLateRegIds.map((regId) => ({ regId }));
-    await LateRegId.insertMany(lateRegDocs);
-    console.log(
-      `Initialized ${initialLateRegIds.length} late registration IDs.`
-    );
+  try {
+    const count = await LateRegId.estimatedDocumentCount();
+    if (count === 0) {
+      console.log("📝 Initializing late registration IDs...");
+      await LateRegId.insertMany(initialLateRegIds.map((regId) => ({ regId })));
+      console.log(
+        `✅ Initialized ${initialLateRegIds.length} late registration IDs`
+      );
+    }
+  } catch (error) {
+    console.error("❌ Failed to initialize late registration IDs:", error);
+    throw error;
   }
 }
 
-// Main Start Server Function
+// ===================== SERVER STARTUP ===================== //
+
+/**
+ * Connect to MongoDB and start Express server
+ */
 async function startServer() {
   try {
-    await mongoose.connect(
-      process.env.MONGO_URI || "mongodb://localhost:27017/ahapnDatabase"
-    );
-    console.log("MongoDB connected");
+    // MongoDB Connection
+    const mongoUri =
+      process.env.MONGO_URI || "mongodb://localhost:27017/ahapnDatabase";
+    await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    console.log("📦 Connected to MongoDB");
 
-    await initializeRegIds();
-    await initializeLateRegIds();
+    // Initialize Data
+    await Promise.all([initializeRegIds(), initializeLateRegIds()]);
 
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    // Start Server
+    const port = process.env.PORT || 5000;
+    const server = app.listen(port, () => {
+      console.log(`🚀 Server running on port ${port}`);
+      console.log(`🌐 http://localhost:${port}`);
+    });
+
+    // Graceful Shutdown
+    process.on("SIGTERM", () => {
+      console.log("🛑 SIGTERM received. Shutting down gracefully...");
+      server.close(() => {
+        mongoose.connection.close(false, () => {
+          console.log("🔒 MongoDB connection closed");
+          process.exit(0);
+        });
+      });
+    });
   } catch (error) {
-    console.error("Error starting server:", error);
+    console.error("💥 Failed to start server:", error);
     process.exit(1);
   }
 }
 
-// Run the server
+// ===================== ENTRY POINT ===================== //
 startServer();
