@@ -30,7 +30,7 @@ app.use(limiter);
 const corsOptions = {
   origin: [
     "https://ahapnng.org",
-    "http://localhost:3000/*", // Remove in production
+    "http://localhost:5173", // Remove in production
   ],
   optionsSuccessStatus: 200,
 };
