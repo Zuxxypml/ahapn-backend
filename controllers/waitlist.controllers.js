@@ -4,6 +4,7 @@ import LateRegId from "../models/LateRegIds.model.js";
 import nodemailer from "nodemailer";
 import PDFKit from "pdfkit";
 import bwipjs from "bwip-js";
+import Counter from "../models/Counter.model.js";
 
 // Constants (for easy maintenance)
 const LATE_REGISTRATION_START = "2025-07-01";
@@ -72,8 +73,10 @@ export const getUserByEmail = async (req, res) => {
 export const addToWaitlist = async (req, res) => {
   try {
     const { name, email, phoneNumber, state, regId, lateRegId } = req.body;
-    if (!req.file)
+
+    if (!req.file) {
       return res.status(400).json({ message: "No image uploaded" });
+    }
     const imageUrl = `/uploads/${req.file.filename}`;
 
     // Validate Registration Code
@@ -89,8 +92,6 @@ export const addToWaitlist = async (req, res) => {
         .status(400)
         .json({ message: "Late Registration Code required" });
     }
-
-    // Validate Late Code (if applicable)
     if (isLatePeriod) {
       const validLateCode = await LateRegId.findOne({ regId: lateRegId });
       if (!validLateCode) {
@@ -100,12 +101,23 @@ export const addToWaitlist = async (req, res) => {
       }
     }
 
-    // Generate Event ID (format: edo-ahapn-0001)
-    const lastUser = await Waitlist.findOne().sort({ createdAt: -1 });
-    const nextId = lastUser ? parseInt(lastUser.eventId.split("-")[2]) + 1 : 1;
-    const eventId = `edo-ahapn-${String(nextId).padStart(4, "0")}`;
+    // Initialize counter based on highest eventId
+    const lastUser = await Waitlist.findOne({
+      eventId: { $regex: "^edo-ahapn-" },
+    }).sort({ eventId: -1 });
+    const initialSequence = lastUser
+      ? parseInt(lastUser.eventId.split("-")[2])
+      : 0;
 
-    // Save User
+    // Generate unique eventId
+    const counter = await Counter.findOneAndUpdate(
+      { _id: "waitlist_eventId" },
+      { $max: { sequence: initialSequence }, $inc: { sequence: 1 } },
+      { upsert: true, returnDocument: "after" }
+    );
+    const eventId = `edo-ahapn-${String(counter.sequence).padStart(4, "0")}`;
+
+    // Save user to waitlist
     const newUser = await Waitlist.create({
       name,
       email,
@@ -116,11 +128,11 @@ export const addToWaitlist = async (req, res) => {
       eventId,
     });
 
-    // Cleanup: Delete used codes
+    // Cleanup used codes
     await RegId.deleteOne({ regId });
     if (isLatePeriod) await LateRegId.deleteOne({ regId: lateRegId });
 
-    // Send Email with PDF
+    // Send email with PDF
     const pdfBuffer = await generatePDFBuffer(newUser);
     await sendEmail(
       email,
@@ -136,6 +148,9 @@ export const addToWaitlist = async (req, res) => {
     });
   } catch (error) {
     console.error("Waitlist Error:", error);
+    if (error.code === 11000) {
+      return res.status(400).json({ message: "Duplicate event ID detected" });
+    }
     res
       .status(500)
       .json({ message: "Failed to add to waitlist", error: error.message });
