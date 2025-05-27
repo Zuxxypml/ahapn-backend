@@ -74,34 +74,25 @@ export const addToWaitlist = async (req, res) => {
   try {
     const { name, email, phoneNumber, state, regId, lateRegId } = req.body;
 
-    if (!req.file) {
-      return res.status(400).json({ message: "No image uploaded" });
-    }
+    if (!req.file) return res.status(400).json("No image uploaded");
     const imageUrl = `/uploads/${req.file.filename}`;
 
     // Validate Registration Code
     const validRegCode = await RegId.findOne({ regId });
-    if (!validRegCode) {
-      return res.status(400).json({ message: "Invalid Registration Code" });
-    }
+    if (!validRegCode) return res.status(400).json("Invalid registration code");
 
     // Late Registration Check
     const isLatePeriod = new Date() >= new Date(LATE_REGISTRATION_START);
     if (isLatePeriod && !lateRegId) {
-      return res
-        .status(400)
-        .json({ message: "Late Registration Code required" });
+      return res.status(400).json("Late registration code required");
     }
     if (isLatePeriod) {
       const validLateCode = await LateRegId.findOne({ regId: lateRegId });
-      if (!validLateCode) {
-        return res
-          .status(400)
-          .json({ message: "Invalid Late Registration Code" });
-      }
+      if (!validLateCode)
+        return res.status(400).json("Invalid late registration code");
     }
 
-    // Initialize counter based on highest eventId
+    // Initialize counter if it doesn't exist
     const lastUser = await Waitlist.findOne({
       eventId: { $regex: "^edo-ahapn-" },
     }).sort({ eventId: -1 });
@@ -109,11 +100,17 @@ export const addToWaitlist = async (req, res) => {
       ? parseInt(lastUser.eventId.split("-")[2])
       : 0;
 
-    // Generate unique eventId
+    await Counter.updateOne(
+      { _id: "waitlist_eventId" },
+      { $setOnInsert: { sequence: initialSequence } },
+      { upsert: true }
+    );
+
+    // Increment counter atomically
     const counter = await Counter.findOneAndUpdate(
       { _id: "waitlist_eventId" },
-      { $max: { sequence: initialSequence }, $inc: { sequence: 1 } },
-      { upsert: true, returnDocument: "after" }
+      { $inc: { sequence: 1 } },
+      { returnDocument: "after" }
     );
     const eventId = `edo-ahapn-${String(counter.sequence).padStart(4, "0")}`;
 
@@ -142,18 +139,12 @@ export const addToWaitlist = async (req, res) => {
       `event_id_${email}.pdf`
     );
 
-    res.status(201).json({
-      message: "Waitlist entry created!",
-      eventId,
-    });
+    res.status(201).json({ message: "Waitlist entry created!", eventId });
   } catch (error) {
     console.error("Waitlist Error:", error);
-    if (error.code === 11000) {
-      return res.status(400).json({ message: "Duplicate event ID detected" });
-    }
-    res
-      .status(500)
-      .json({ message: "Failed to add to waitlist", error: error.message });
+    if (error.code === 11000)
+      return res.status(400).json("Duplicate event ID detected");
+    res.status(500).json("Failed to add to waitlist: " + error.message);
   }
 };
 
