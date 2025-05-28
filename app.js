@@ -18,13 +18,13 @@ const app = express();
 // Security Headers
 app.use(helmet());
 
-// Rate Limiting (100 requests per 15 minutes)
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: "Too many requests from this IP, please try again later.",
-});
-app.use(limiter);
+// // Rate Limiting (100 requests per 15 minutes)
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000,
+//   max: 100,
+//   message: "Too many requests from this IP, please try again later.",
+// });
+// app.use(limiter);
 
 // CORS (Restrict to your domain + localhost for development)
 const corsOptions = {
