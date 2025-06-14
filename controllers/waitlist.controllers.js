@@ -449,4 +449,104 @@ async function generateCertificateBuffer(name) {
 //   });
 // }
 // Generate PDF function
-async function generatePDFBuffer(user) {}
+// Generate PDF function
+async function generatePDFBuffer(user) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFKit({ size: "A6", margin: 10 });
+    const buffers = [];
+
+    doc.on("data", buffers.push.bind(buffers));
+    doc.on("end", () => resolve(Buffer.concat(buffers)));
+
+    // Background
+    const gradient = doc.linearGradient(0, 0, 0, 420);
+    gradient.stop(0, "#e6ffe6").stop(1, "#b3ffb3");
+    doc.rect(0, 0, 297, 420).fill(gradient);
+
+    // Header
+    doc.rect(0, 0, 297, 40).fill("#006400");
+    doc
+      .fontSize(14)
+      .fillColor("white")
+      .text("EDO 2025", 0, 8, { align: "center" });
+    doc
+      .fontSize(9)
+      .fillColor("white")
+      .text("26TH ANNUAL NATIONAL SCIENTIFIC CONFERENCE", 0, 25, {
+        align: "center",
+      });
+
+    // Border
+    doc.roundedRect(15, 50, 267, 350, 5).stroke("#006400").lineWidth(2);
+
+    // Logos
+    doc.image("./ahapn-logo.png", 20, 60, { width: 70 });
+
+    if (user.imageUrl) {
+      try {
+        doc.image(user.imageUrl.replace(/^\//, ""), 108, 60, {
+          width: 80,
+          height: 100,
+        });
+        doc.rect(108, 60, 80, 100).stroke("#006400");
+      } catch (err) {
+        console.error("Error loading attendee image:", err);
+      }
+    }
+
+    doc.image("./benin-mask.png", 207, 60, { width: 80, opacity: 0.2 });
+
+    // Details
+    doc
+      .fontSize(10)
+      .fillColor("#333")
+      .text(`Name: ${user.name.toUpperCase()}`, 20, 200, {
+        width: 257,
+        align: "center",
+      });
+    doc
+      .fontSize(10)
+      .fillColor("#333")
+      .text(`State: ${user.state.toUpperCase()}`, 20, 220, {
+        width: 257,
+        align: "center",
+      });
+    doc
+      .fontSize(12)
+      .fillColor("#006400")
+      .text(`ID: ${user.eventId.toUpperCase()}`, 20, 240, {
+        width: 257,
+        align: "center",
+      });
+    doc
+      .fontSize(8)
+      .fillColor("#666")
+      .font("Times-Italic")
+      .text("Valid: Aug 4–9, 2025", 20, 260, { width: 257, align: "center" });
+
+    // Barcode
+    bwipjs.toBuffer(
+      {
+        bcid: "code128",
+        text: user.eventId,
+        scale: 2,
+        height: 12,
+        includetext: true,
+      },
+      (err, barcodeBuffer) => {
+        if (err) reject(err);
+        else {
+          doc.image(barcodeBuffer, 60, 330, { width: 180 });
+          doc
+            .font("Times-Roman")
+            .fontSize(9)
+            .fillColor("#006400")
+            .text("AHAPN | ahapn2021@gmail.com | 08079238160", 0, 390, {
+              align: "center",
+            });
+          doc.end();
+        }
+      }
+    );
+  });
+}
