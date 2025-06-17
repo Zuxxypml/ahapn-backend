@@ -80,17 +80,22 @@ export const addToWaitlist = async (req, res) => {
 
     // Validate Registration Code
     const validRegCode = await RegId.findOne({ regId });
-    if (!validRegCode) return res.status(400).json("Invalid registration code");
+    if (!validRegCode)
+      return res.status(400).json({ message: "Invalid registration code" });
 
     // Late Registration Check
     const isLatePeriod = new Date() >= new Date(LATE_REGISTRATION_START);
     if (isLatePeriod && !lateRegId) {
-      return res.status(400).json("Late registration code required");
+      return res
+        .status(400)
+        .json({ message: "Late registration code required" });
     }
     if (isLatePeriod) {
       const validLateCode = await LateRegId.findOne({ regId: lateRegId });
       if (!validLateCode)
-        return res.status(400).json("Invalid late registration code");
+        return res
+          .status(400)
+          .json({ message: "Invalid late registration code" });
     }
 
     // Initialize counter if it doesn't exist
@@ -140,12 +145,19 @@ export const addToWaitlist = async (req, res) => {
       `event_id_${email}.pdf`
     );
 
-    res.status(201).json({ message: "Waitlist entry created!", eventId });
+    res
+      .status(201)
+      .json({
+        message: "You have successfully registered for AHAPN EDO 2025!",
+        eventId,
+      });
   } catch (error) {
     console.error("Waitlist Error:", error);
     if (error.code === 11000)
-      return res.status(400).json("Duplicate event ID detected");
-    res.status(500).json("Failed to add to waitlist: " + error.message);
+      return res.status(400).json({ message: "Duplicate event ID detected" });
+    res
+      .status(500)
+      .json({ message: "Failed to add to waitlist: " } + error.message);
   }
 };
 
