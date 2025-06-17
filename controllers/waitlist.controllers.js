@@ -81,7 +81,12 @@ export const addToWaitlist = async (req, res) => {
     // Validate Registration Code
     const validRegCode = await RegId.findOne({ regId });
     if (!validRegCode)
-      return res.status(400).json({ message: "Invalid registration code" });
+      return res
+        .status(400)
+        .json({
+          message:
+            "Invalid or Used registration code, check your email or use the download section to download your id",
+        });
 
     // Late Registration Check
     const isLatePeriod = new Date() >= new Date(LATE_REGISTRATION_START);
@@ -145,12 +150,10 @@ export const addToWaitlist = async (req, res) => {
       `event_id_${email}.pdf`
     );
 
-    res
-      .status(201)
-      .json({
-        message: "You have successfully registered for AHAPN EDO 2025!",
-        eventId,
-      });
+    res.status(201).json({
+      message: "You have successfully registered for AHAPN EDO 2025!",
+      eventId,
+    });
   } catch (error) {
     console.error("Waitlist Error:", error);
     if (error.code === 11000)
