@@ -75,7 +75,8 @@ export const addToWaitlist = async (req, res) => {
   try {
     const { name, email, phoneNumber, state, regId, lateRegId } = req.body;
 
-    if (!req.file) return res.status(400).json("No image uploaded");
+    if (!req.file)
+      return res.status(400).json({ message: "No image uploaded" });
     const imageUrl = `/uploads/${req.file.filename}`;
 
     // Validate Registration Code
