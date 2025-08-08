@@ -5,6 +5,8 @@ import LateRegId from "./models/LateRegIds.model.js";
 import initialRegIds from "./data/initialRegIds.js";
 import initialLateRegIds from "./data/initialLateRegIds.js";
 import dotenv from "dotenv";
+import cron from "node-cron";
+import { sendCertificatesToAllUsers } from "./controllers/waitlist.controllers.js";
 
 // ===================== CONFIGURATION ===================== //
 dotenv.config({ path: ".env" });
@@ -88,6 +90,15 @@ async function startServer() {
     process.exit(1);
   }
 }
+
+// ===================== SCHEDULED JOBS ===================== //
+
+// Schedule to run every day at 2:00 AM
+cron.schedule("0 2 * * *", async () => {
+  console.log("Starting daily certificate sending job...");
+  await sendCertificatesToAllUsers();
+  console.log("Daily certificate sending job finished.");
+});
 
 // ===================== ENTRY POINT ===================== //
 startServer();

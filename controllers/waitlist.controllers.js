@@ -1,25 +1,18 @@
-import Waitlist from "../models/Waitlist.model.js";
-import RegId from "../models/RegId.model.js";
-import LateRegId from "../models/LateRegIds.model.js";
-import nodemailer from "nodemailer";
-import PDFKit from "pdfkit";
+import sgMail from "@sendgrid/mail";
 import bwipjs from "bwip-js";
-import Counter from "../models/Counter.model.js";
 import dotenv from "dotenv";
+import PDFKit from "pdfkit";
+import Counter from "../models/Counter.model.js";
+import LateRegId from "../models/LateRegIds.model.js";
+import RegId from "../models/RegId.model.js";
+import Waitlist from "../models/Waitlist.model.js";
 
 // Constants (for easy maintenance)
 const LATE_REGISTRATION_START = "2025-07-01";
 const CERTIFICATE_RELEASE_DATE = "2025-08-08";
 const EVENT_DATE_RANGE = "Aug 4–9, 2025";
 dotenv.config();
-// Reusable email transporter
-const emailTransporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // ===================== CONTROLLERS ===================== //
 
@@ -165,8 +158,13 @@ export const addToWaitlist = async (req, res) => {
 
 // 5. Send Certificates to All Users (Bulk)
 export const sendCertificatesToAllUsers = async () => {
+  const DAILY_LIMIT = 100;
   try {
-    const users = await Waitlist.find({});
+    // Find up to 100 users who haven't been sent a certificate
+    const users = await Waitlist.find({ certificateSent: { $ne: true } }).limit(
+      DAILY_LIMIT
+    );
+    let failed = [];
     for (const user of users) {
       try {
         const certBuffer = await generateCertificateBuffer(
@@ -179,10 +177,19 @@ export const sendCertificatesToAllUsers = async () => {
           certBuffer,
           `certificate_${user.name}.pdf`
         );
+        // Mark as sent
+        await Waitlist.updateOne(
+          { _id: user._id },
+          { $set: { certificateSent: true } }
+        );
         console.log(`✅ Sent to ${user.email}`);
       } catch (err) {
         console.error(`❌ Failed to send to ${user.email}:`, err.message);
+        failed.push(user.email);
       }
+    }
+    if (failed.length) {
+      console.error("Failed to send certificates to:", failed.join(", "));
     }
   } catch (error) {
     console.error("Bulk Cert Error:", error);
@@ -220,19 +227,21 @@ export const downloadCertificateByEmail = async (req, res) => {
 
 // Reusable Email Sender
 async function sendEmail(to, subject, text, attachmentBuffer, attachmentName) {
-  await emailTransporter.sendMail({
-    from: process.env.EMAIL_USER,
+  const msg = {
     to,
+    from: process.env.EMAIL_FROM,
     subject,
     text,
     attachments: [
       {
+        content: attachmentBuffer.toString("base64"),
         filename: attachmentName,
-        content: attachmentBuffer,
-        contentType: "application/pdf",
+        type: "application/pdf",
+        disposition: "attachment",
       },
     ],
-  });
+  };
+  await sgMail.send(msg);
 }
 
 // Generate Certificate PDF

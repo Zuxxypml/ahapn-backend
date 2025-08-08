@@ -9,7 +9,8 @@ const waitlistSchema = new mongoose.Schema({
   imageUrl: { type: String },
   eventId: { type: String, required: true, unique: true },
   timestamp: { type: Date, default: Date.now },
-});
+  certificateSent: { type: Boolean, default: false },
+}, { timestamps: true });
 
 const Waitlist = mongoose.model("Waitlist", waitlistSchema);
 
