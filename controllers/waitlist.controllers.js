@@ -9,7 +9,7 @@ import dotenv from "dotenv";
 
 // Constants (for easy maintenance)
 const LATE_REGISTRATION_START = "2025-07-01";
-const CERTIFICATE_RELEASE_DATE = "2025-08-09";
+const CERTIFICATE_RELEASE_DATE = "2025-08-08";
 const EVENT_DATE_RANGE = "Aug 4–9, 2025";
 dotenv.config();
 // Reusable email transporter
