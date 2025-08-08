@@ -261,7 +261,7 @@ async function generateCertificateBuffer(name) {
     // Participant Name
     doc
       .font("Helvetica-Bold")
-      .fontSize(28)
+      .fontSize(22)
       .text(name.toUpperCase(), 275, 260, { align: "center" });
 
     doc.end();
