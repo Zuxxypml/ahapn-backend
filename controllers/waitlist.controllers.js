@@ -253,7 +253,7 @@ async function generateCertificateBuffer(name) {
     doc.on("end", () => resolve(Buffer.concat(buffers)));
 
     // Background Template
-    doc.image("./assets/certificate-template.jpeg", 0, 0, {
+    doc.image("./assets/certificate-template.jpg", 0, 0, {
       width: 842,
       height: 595,
     });
