@@ -94,7 +94,7 @@ async function startServer() {
 // ===================== SCHEDULED JOBS ===================== //
 
 // Schedule to run every day at 2:00 AM
-cron.schedule("0 2 * * *", async () => {
+cron.schedule("1 3 * * *", async () => {
   console.log("Starting daily certificate sending job...");
   await sendCertificatesToAllUsers();
   console.log("Daily certificate sending job finished.");

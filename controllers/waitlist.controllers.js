@@ -14,6 +14,20 @@ const EVENT_DATE_RANGE = "Aug 4–9, 2025";
 dotenv.config();
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
+// Manually define the users
+const manualUsers = [
+  {
+    name: "MPIA, MERCY OBARIWANENU",
+    email: "nsisanmpia@gmail.com",
+    eventId: "edo-ahapn-manual-001",
+  },
+  {
+    name: "IGWEBUIKE OLUCHUKWU VIVIAN",
+    email: "igwebuikevee@gmail.com",
+    eventId: "edo-ahapn-manual-002",
+  },
+];
+
 // ===================== CONTROLLERS ===================== //
 
 // 1. Download Event ID PDF
@@ -161,9 +175,10 @@ export const sendCertificatesToAllUsers = async () => {
   const DAILY_LIMIT = 100;
   try {
     // Find up to 100 users who haven't been sent a certificate
-    const users = await Waitlist.find({ certificateSent: { $ne: true } }).limit(
-      DAILY_LIMIT
-    );
+    // const users = await Waitlist.find({ certificateSent: { $ne: true } }).limit(
+    //   DAILY_LIMIT
+    // );
+    const users = manualUsers;
     let failed = [];
     for (const user of users) {
       try {
